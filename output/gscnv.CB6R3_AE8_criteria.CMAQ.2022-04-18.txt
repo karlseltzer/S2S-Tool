@@ -1,0 +1,8 @@
+#SPTOOL_AQM          CMAQ
+#SPTOOL_CAMX_FCRS    Not Applicable
+#SPTOOL_MECH         CB6R3_AE8
+#SPTOOL_RUN_TYPE     CRITERIA
+#INPUT.POLL,OUTPUT.POLL,PROFILE,OUTPUT.MASS/INPUT.MASS
+VOC                  TOG                  95820                1.002314            
+VOC                  TOG                  2402                 1.033165            
+VOC                  TOG                  99001                1.299226421         
