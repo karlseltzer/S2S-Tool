@@ -36,21 +36,21 @@ def gen_gspro_voc(profiles,species,species_props,molwght,mech4import,tbl_tox,MEC
             TOXLIST   = tbl_tox.loc[:,'SPECIES_ID'] # pull integrated SPECIES_ID list
             TOXLIST   = TOXLIST.drop_duplicates() # drop duplicates
             TOXLIST   = TOXLIST.reset_index(drop=True) # reset index
-            temp_spec = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(TOXLIST)] # pull target speciation profile minus TOXLIST
+            temp_spec = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(TOXLIST)].copy() # pull target speciation profile minus TOXLIST
             i_poll    = 'TOG'
             METHANE   = pd.Series(data={'SPECIES_ID':529})
-            nmog_perc = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(METHANE)] # pull target speciation profile minus METHANE
+            nmog_perc = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(METHANE)].copy() # pull target speciation profile minus METHANE
             nmog_perc = nmog_perc['WEIGHT_PERCENT'].sum()
         else: # if RUN_TYPE=='INTEGRATE':
             temp_spec['WEIGHT_PERCENT'] = temp_spec['WEIGHT_PERCENT'] / temp_spec['WEIGHT_PERCENT'].sum()  # Renormalize Wght%
             TOXLIST   = tbl_tox.loc[:,'SPECIES_ID'] # pull integrated SPECIES_ID list
             TOXLIST   = TOXLIST.drop_duplicates() # drop duplicates
             TOXLIST   = TOXLIST.reset_index(drop=True) # reset index
-            temp_spec = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(TOXLIST)] # pull target speciation profile minus TOXLIST
+            temp_spec = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(TOXLIST)].copy() # pull target speciation profile minus TOXLIST
             i_poll    = TOX_IN
             temp_spec['WEIGHT_PERCENT'] = temp_spec['WEIGHT_PERCENT'] / temp_spec['WEIGHT_PERCENT'].sum()  # Renormalize Wght%
             METHANE   = pd.Series(data={'SPECIES_ID':529})
-            nmog_perc = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(METHANE)] # pull target speciation profile minus METHANE
+            nmog_perc = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(METHANE)].copy() # pull target speciation profile minus METHANE
             nmog_perc = nmog_perc['WEIGHT_PERCENT'].sum()
 
         temp_spec = temp_spec.loc[temp_spec['WEIGHT_PERCENT'] > 0.0 ] # Remove species where WEIGHT_PERCENT == 0.0
@@ -93,18 +93,19 @@ def gen_gspro_voc(profiles,species,species_props,molwght,mech4import,tbl_tox,MEC
             else:
                 nmog = pd.Series(data={'PROFILE':prof,'INPUT.POLL':i_poll,'MODEL.SPECIES':'NMOG','MASS.FRACTION':nmog_perc,\
                                        'MOLECULAR.WGHT':1,'MASS.FRACTION1':nmog_perc})
-                molesplit = molesplit.append(nmog,ignore_index=True)
+                molesplit = pd.concat([molesplit,pd.DataFrame([nmog])],ignore_index=True)
 
         if MECH_BASIS == 'CB6R3_AE7_TRACER': # remove NONBAF from CB6R3_AE7_TRACER GSPROs
             NONBAF = pd.Series(data={'MODEL.SPECIES':'NONBAF'})
             molesplit = molesplit.loc[~molesplit['MODEL.SPECIES'].isin(NONBAF)] # remove NONBAF from profile
         else: pass
 
-        dfgspro   = dfgspro.append(molesplit) # append profile gspro to final gspro
+        dfgspro   = pd.concat([dfgspro,molesplit]) # append profile gspro to final gspro
 
     dfgspro['MASS.FRACTION']  = dfgspro['MASS.FRACTION'].astype(float).apply(lambda x: '%.6E' % x)
     dfgspro['MOLECULAR.WGHT'] = dfgspro['MOLECULAR.WGHT'].astype(float).apply(lambda x: '%.6E' % x)
     dfgspro['MASS.FRACTION1'] = dfgspro['MASS.FRACTION1'].astype(float).apply(lambda x: '%.6E' % x)
+
 
     ### Output gspro df to file
     dfgspro.to_csv(PRO_OUT,index=False,header=False)
@@ -224,7 +225,7 @@ def gen_gspro_pm(profiles,species,species_props,mechPM,tbl_tox,poa_volatility,po
             TOXLIST   = tbl_tox.loc[:,'SPECIES_ID'] # pull integrated SPECIES_ID list
             TOXLIST   = TOXLIST.drop_duplicates() # drop duplicates
             TOXLIST   = TOXLIST.reset_index(drop=True) # reset index
-            temp_spec = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(TOXLIST)] # pull target speciation profile minus TOXLIST
+            temp_spec = temp_spec.loc[~temp_spec['SPECIES_ID'].isin(TOXLIST)].copy() # pull target speciation profile minus TOXLIST
             temp_spec['WEIGHT_PERCENT'] = temp_spec['WEIGHT_PERCENT'] / temp_spec['WEIGHT_PERCENT'].sum()  # Renormalize Wght%
             i_poll    = TOX_IN
         
@@ -255,28 +256,113 @@ def gen_gspro_pm(profiles,species,species_props,mechPM,tbl_tox,poa_volatility,po
                                                                                  profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO'] # add POC
                 temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (1 - 1 / \
                                                                                    profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO']) # add PNCOM
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR2':
+                temp_mech.loc[temp_mech['Species'] == 'POC', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * 1 / \
+                                                                                 profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO'] # add POC
+                temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (1 - 1 / \
+                                                                                   profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO']) # add PNCOM
             else: sys.exit('PROFILE_TYPE = '+profiles.loc[i,'PROFILE_TYPE']+' for profile '+prof+' is not recognized.')
 
         elif MECH_BASIS == 'PM-CR1':
             if profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE6' or profiles.loc[i,'PROFILE_TYPE'] == 'PM':
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'-2'][0] # add POCN2
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'-1'][0] # add POCN1
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'0'][0] # add POCP0
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'1'][0] # add POCP1
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'2'][0] # add POCP2
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N2ALK'][0] # add AROCN2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N1ALK'][0] # add AROCN1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P0ALK'][0] # add AROCP0ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P1ALK'][0] # add AROCP1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P2ALK'][0] # add AROCP2ALK
 
             elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE8':
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() # add POCN2
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() # add POCN1
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 0, 'WEIGHT_PERCENT'].sum() # add POCP0
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 1, 'WEIGHT_PERCENT'].sum() # add POCP1
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 2, 'WEIGHT_PERCENT'].sum() # add POCP2
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() # add AROCN2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() # add AROCN1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 0, 'WEIGHT_PERCENT'].sum() # add AROCP0ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 1, 'WEIGHT_PERCENT'].sum() # add AROCP1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 2, 'WEIGHT_PERCENT'].sum() # add AROCP2ALK
                 
             elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR1':
                 pass # SV-POA already appropriately mapped in base profile.
+
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR2':
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() # add AROCN2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() # add AROCN1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 0, 'WEIGHT_PERCENT'].sum() # add AROCP0ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 1, 'WEIGHT_PERCENT'].sum() # add AROCP1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 2, 'WEIGHT_PERCENT'].sum() # add AROCP2ALK
             
             else: sys.exit('PROFILE_TYPE = '+profiles.loc[i,'PROFILE_TYPE']+' for profile '+prof+' is not recognized.')
-        
+
+        elif MECH_BASIS == 'PM-CR2':
+            if profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE6' or profiles.loc[i,'PROFILE_TYPE'] == 'PM':
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N2ALK'][0] # add AROCN2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N1ALK'][0] # add AROCN1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P0ALK'][0] # add AROCP0ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P1ALK'][0] # add AROCP1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P2ALK'][0] # add AROCP2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3524., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N2OXY8'][0] # add AROCN2OXY8
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3523., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N2OXY4'][0] # add AROCN2OXY4
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3522., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N2OXY2'][0] # add AROCN2OXY2
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3527., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N1OXY6'][0] # add AROCN1OXY6
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3526., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N1OXY3'][0] # add AROCN1OXY3
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3525., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N1OXY1'][0] # add AROCN1OXY1
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3529., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P0OXY4'][0] # add AROCP0OXY4
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3528., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P0OXY2'][0] # add AROCP0OXY2
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3531., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P1OXY3'][0] # add AROCP1OXY3
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3530., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P1OXY1'][0] # add AROCP1OXY1
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3532., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P2OXY2'][0] # add AROCP2OXY2
+                
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE8':
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N2ALK'][0] / (temp_poa.loc[:,'N2ALK'][0] + temp_poa.loc[:,'N2OXY8'][0] + \
+                                                                                    temp_poa.loc[:,'N2OXY4'][0] + temp_poa.loc[:,'N2OXY2'][0]) # add AROCN2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N1ALK'][0] / (temp_poa.loc[:,'N1ALK'][0] + temp_poa.loc[:,'N1OXY6'][0] + \
+                                                                                    temp_poa.loc[:,'N1OXY3'][0] + temp_poa.loc[:,'N1OXY1'][0]) # add AROCN1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 0, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P0ALK'][0] / (temp_poa.loc[:,'P0ALK'][0] + temp_poa.loc[:,'P0OXY4'][0] + \
+                                                                                    temp_poa.loc[:,'P0OXY2'][0]) # add AROCP0ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P1ALK'][0] / (temp_poa.loc[:,'P1ALK'][0] + temp_poa.loc[:,'P1OXY3'][0] + \
+                                                                                    temp_poa.loc[:,'P1OXY1'][0]) # add AROCP1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 2, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P2ALK'][0] / (temp_poa.loc[:,'P2ALK'][0] + temp_poa.loc[:,'P2OXY2'][0]) # add AROCP2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3524., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N2OXY8'][0] / (temp_poa.loc[:,'N2ALK'][0] + temp_poa.loc[:,'N2OXY8'][0] + \
+                                                                                    temp_poa.loc[:,'N2OXY4'][0] + temp_poa.loc[:,'N2OXY2'][0]) # add AROCN2OXY8
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3523., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N2OXY4'][0] / (temp_poa.loc[:,'N2ALK'][0] + temp_poa.loc[:,'N2OXY8'][0] + \
+                                                                                    temp_poa.loc[:,'N2OXY4'][0] + temp_poa.loc[:,'N2OXY2'][0]) # add AROCN2OXY4
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3522., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N2OXY2'][0] / (temp_poa.loc[:,'N2ALK'][0] + temp_poa.loc[:,'N2OXY8'][0] + \
+                                                                                    temp_poa.loc[:,'N2OXY4'][0] + temp_poa.loc[:,'N2OXY2'][0]) # add AROCN2OXY2
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3527., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N1OXY6'][0] / (temp_poa.loc[:,'N1ALK'][0] + temp_poa.loc[:,'N1OXY6'][0] + \
+                                                                                    temp_poa.loc[:,'N1OXY3'][0] + temp_poa.loc[:,'N1OXY1'][0]) # add AROCN1OXY6
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3526., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N1OXY3'][0] / (temp_poa.loc[:,'N1ALK'][0] + temp_poa.loc[:,'N1OXY6'][0] + \
+                                                                                    temp_poa.loc[:,'N1OXY3'][0] + temp_poa.loc[:,'N1OXY1'][0]) # add AROCN1OXY3
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3525., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'N1OXY1'][0] / (temp_poa.loc[:,'N1ALK'][0] + temp_poa.loc[:,'N1OXY6'][0] + \
+                                                                                    temp_poa.loc[:,'N1OXY3'][0] + temp_poa.loc[:,'N1OXY1'][0]) # add AROCN1OXY1                                                                                                                  
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3529., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 0, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P0OXY4'][0] / (temp_poa.loc[:,'P0ALK'][0] + temp_poa.loc[:,'P0OXY4'][0] + \
+                                                                                    temp_poa.loc[:,'P0OXY2'][0]) # add AROCP0OXY4
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3528., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 0, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P0OXY2'][0] / (temp_poa.loc[:,'P0ALK'][0] + temp_poa.loc[:,'P0OXY4'][0] + \
+                                                                                    temp_poa.loc[:,'P0OXY2'][0]) # add AROCP0OXY2
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3531., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P1OXY3'][0] / (temp_poa.loc[:,'P1ALK'][0] + temp_poa.loc[:,'P1OXY3'][0] + \
+                                                                                    temp_poa.loc[:,'P1OXY1'][0]) # add AROCP1OXY3
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3530., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 1, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P1OXY1'][0] / (temp_poa.loc[:,'P1ALK'][0] + temp_poa.loc[:,'P1OXY3'][0] + \
+                                                                                    temp_poa.loc[:,'P1OXY1'][0]) # add AROCP1OXY1
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3532., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == 2, 'WEIGHT_PERCENT'].sum() * \
+                                                                                    temp_poa.loc[:,'P2OXY2'][0] / (temp_poa.loc[:,'P2ALK'][0] + temp_poa.loc[:,'P2OXY2'][0]) # add AROCP2OXY2
+
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR1':
+                pass # SV-POA already appropriately mapped in base profile. Use PM-CR1 profile.
+                
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR2':
+                pass # SV-POA already appropriately mapped in base profile.            
+                
         else: sys.exit('MECH_BASIS is not recognized.')
         
         ### Chlorine: If 337 is absent, but 795 is present, use 795
@@ -346,10 +432,10 @@ def gen_gspro_pm(profiles,species,species_props,mechPM,tbl_tox,poa_volatility,po
         ### Calculate POA for CAMX and drop PNCOM
         temp_mech = temp_mech.reset_index(drop=True) # reset index
         if AQM=='CAMX':
-            poa_row   = {'AQM': AQM, 'Mechanism': temp_mech.loc[0,'Mechanism'], 'SPECIES_ID': 9999, 'Species': 'POA', \
+            poa_row   = pd.Series(data={'AQM': AQM, 'Mechanism': temp_mech.loc[0,'Mechanism'], 'SPECIES_ID': 9999, 'Species': 'POA', \
                          'WEIGHT_PERCENT':temp_mech.loc[temp_mech['Species'] == 'POC', 'WEIGHT_PERCENT'].sum() + \
-                         temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'].sum()}
-            temp_mech = temp_mech.append(poa_row, ignore_index = True)
+                         temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'].sum()})
+            temp_mech = pd.concat([temp_mech,pd.DataFrame([poa_row])],ignore_index = True)
             temp_mech.drop(temp_mech.index[temp_mech['Species'] == 'PNCOM'], inplace=True)
         else: pass
 
@@ -370,7 +456,7 @@ def gen_gspro_pm(profiles,species,species_props,mechPM,tbl_tox,poa_volatility,po
         temp_mech = temp_mech[column_names] # reorder columns
         temp_mech = temp_mech.reset_index(drop=True) # reset index
 
-        dfgspro   = dfgspro.append(temp_mech) # append profile gspro to final gspro
+        dfgspro   = pd.concat([dfgspro,temp_mech]) # append profile gspro to final gspro
         
     dfgspro['MASS.FRACTION']  = dfgspro['MASS.FRACTION'].astype(float).apply(lambda x: '%.6E' % x)
     dfgspro['MOLECULAR.WGHT'] = dfgspro['MOLECULAR.WGHT'].astype(float).apply(lambda x: '%.6E' % x)

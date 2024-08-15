@@ -10,16 +10,17 @@ def check_basis_output(MECH_BASIS,OUTPUT):
     if OUTPUT=='VOC':
         if MECH_BASIS=='CB6R3_AE7' or MECH_BASIS=='CB6R5_AE7' or MECH_BASIS=='CB7_AE7' or \
            MECH_BASIS=='CB6R4_CF2' or MECH_BASIS=='CB7_CF2' or MECH_BASIS=='CB6R3_AE7_TRACER' or \
-           MECH_BASIS=='CRACMMv1.0' or MECH_BASIS=='SAPRC07TC_AE7' or MECH_BASIS=='SAPRC07_CF2': pass
+           MECH_BASIS=='CRACMMv1.0' or MECH_BASIS=='CRACMMv2.0' or MECH_BASIS=='SAPRC07TC_AE7' or \
+           MECH_BASIS=='SAPRC07_CF2': pass
         else:
             print('MECH_BASIS for OUTPUT==VOC is not allowed.')
-            sys.exit('Only CB6R3_AE7, CB6R5_AE7, CB7_AE7, CB6R4_CF2, CB7_CF2, CB6R3_AE7_TRACER, CRACMMv1.0, SAPRC07TC_AE7, SAPRC07_CF2 are accepted.')
+            sys.exit('Only CB6R3_AE7, CB6R5_AE7, CB7_AE7, CB6R4_CF2, CB7_CF2, CB6R3_AE7_TRACER, CRACMMv1.0, CRACMMv2.0, SAPRC07TC_AE7, SAPRC07_CF2 are accepted.')
     elif OUTPUT=='PM':
-        if MECH_BASIS=='PM-AE6' or MECH_BASIS=='PM-CR1':
+        if MECH_BASIS=='PM-AE6' or MECH_BASIS=='PM-CR1' or MECH_BASIS=='PM-CR2':
             pass
         else:
             print('MECH_BASIS for OUTPUT==PM is not allowed.')
-            sys.exit('Only PM-AE6 and PM-CR1 are accepted.')
+            sys.exit('Only PM-AE6, PM-CR1, and PM-CR2 are accepted.')
     else: sys.exit('OUTPUT entered is not recognized. Only VOC and PM are allowed.')
 ####################################################################################################
 
@@ -117,7 +118,10 @@ def check_species_mech4import(mech4import,species,MECH_BASIS):
 ####################################################################################################
 def check_profiles_volatility(profiles,poa_volatility):
     poa_copy  = poa_volatility.copy()
-    poa_copy['Total'] = poa_copy['-2'] + poa_copy['-1'] + poa_copy['0'] + poa_copy['1'] + poa_copy['2']
+    poa_copy['Total'] = poa_copy['N2ALK'] + poa_copy['N1ALK'] + poa_copy['P0ALK'] + poa_copy['P1ALK'] + poa_copy['P2ALK'] + \
+                        poa_copy['N2OXY8'] + poa_copy['N2OXY4'] + poa_copy['N2OXY2'] + poa_copy['N1OXY6'] + poa_copy['N1OXY3'] + \
+                        poa_copy['N1OXY1'] + poa_copy['P0OXY4'] + poa_copy['P0OXY2'] + poa_copy['P1OXY3'] + poa_copy['P1OXY1'] + \
+                        poa_copy['P2OXY2']
     temp_prof = pd.merge(profiles,poa_copy,on=['CATEGORY_LEVEL_1_Generation_Mechanism','CATEGORY_LEVEL_2_Sector_Equipment'], \
                          how ='left').fillna(0)
     no_vol    = temp_prof.loc[temp_prof['Total'] == 0.0]
@@ -133,7 +137,10 @@ def check_profiles_volatility(profiles,poa_volatility):
 ####################################################################################################
 def check_volatility(poa_volatility):
     poa_copy  = poa_volatility.copy()
-    poa_copy['Total'] = poa_copy['-2'] + poa_copy['-1'] + poa_copy['0'] + poa_copy['1'] + poa_copy['2']
+    poa_copy['Total'] = poa_copy['N2ALK'] + poa_copy['N1ALK'] + poa_copy['P0ALK'] + poa_copy['P1ALK'] + poa_copy['P2ALK'] + \
+                        poa_copy['N2OXY8'] + poa_copy['N2OXY4'] + poa_copy['N2OXY2'] + poa_copy['N1OXY6'] + poa_copy['N1OXY3'] + \
+                        poa_copy['N1OXY1'] + poa_copy['P0OXY4'] + poa_copy['P0OXY2'] + poa_copy['P1OXY3'] + poa_copy['P1OXY1'] + \
+                        poa_copy['P2OXY2']
     wrong_vol = poa_copy.loc[poa_copy['Total'] != 1.0]
     wrong_vol = wrong_vol.reset_index(drop=True) # reset index
     if wrong_vol.empty:

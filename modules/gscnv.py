@@ -34,11 +34,11 @@ def gen_gscnv(profiles,species,species_props,tbl_tox,gscnv_append,MECH_BASIS,RUN
                 ratio = 100/temp_spec.loc[temp_spec['NonVOCTOG'] == 0, 'WEIGHT_PERCENT'].sum()
             gscnv_row = pd.Series(data={'INPUT.POLL':i_poll,'OUTPUT.POLL':o_poll,
                                         'PROFILE':prof,'OUTPUT.MASS/INPUT.MASS':ratio})
-            dfgscnv   = dfgscnv.append(gscnv_row,ignore_index=True)
+            dfgscnv   = pd.concat([dfgscnv,pd.DataFrame([gscnv_row])],ignore_index=True)
 
         if RUN_TYPE=='CRITERIA':
             gscnv_append = pd.merge(gscnv_append,dfgscnv[['PROFILE','OUTPUT.MASS/INPUT.MASS']],on='PROFILE',how ='left') # append TOG/VOC ratio
-            dfgscnv   = dfgscnv.append(gscnv_append,ignore_index=True)
+            dfgscnv   = pd.concat([dfgscnv,gscnv_append],ignore_index=True)
         else: pass
 
     else: # if RUN_TYPE=='INTEGRATE'
@@ -63,7 +63,7 @@ def gen_gscnv(profiles,species,species_props,tbl_tox,gscnv_append,MECH_BASIS,RUN
                 ratio = temp_spec['WEIGHT_PERCENT'].sum()/temp_spec.loc[temp_spec['NonVOCTOG'] == 0, 'WEIGHT_PERCENT'].sum()
             gscnv_row = pd.Series(data={'INPUT.POLL':i_poll,'OUTPUT.POLL':o_poll,
                                         'PROFILE':prof,'OUTPUT.MASS/INPUT.MASS':ratio})
-            dfgscnv   = dfgscnv.append(gscnv_row,ignore_index=True)
+            dfgscnv   = pd.concat([dfgscnv,pd.DataFrame([gscnv_row])],ignore_index=True)
     
     dfgscnv['OUTPUT.MASS/INPUT.MASS'] = dfgscnv['OUTPUT.MASS/INPUT.MASS'].astype(float).apply(lambda x: '%.8F' % x)
     

@@ -14,13 +14,13 @@ from datetime import date,datetime
 
 startTime = datetime.now()
 
-def dfappend_cb6r3_ae7(dfin):
+def dfappend_cb7vcp_cf2(dfin):
   '''
     Compound to mechanism mapping
   '''
 
-  mech = 'CB6R3_AE7'
-  dfin['CB6R3_AE7']=''  
+  mech = 'CB7VCP_CF2'
+  dfin['CB7VCP_CF2']=''  
 
   # mech4import prep
   column_names = ['mechanism','SPECIES_ID','mech_species','moles_ratio']
@@ -35,16 +35,16 @@ def dfappend_cb6r3_ae7(dfin):
     log10cstar  = np.log10(molwght * Pvap / 8.31451 / 298.15 * 1000000)
     if ( pd.isnull(smiles) or smiles=='-' or pd.isnull(koh) ):
                                     mechspecies, mole_ratio = 'UNR', 1 # Unreactive
-    else: mechspecies, mole_ratio = get_cb6r3_ae7_roc(smiles,log10cstar,koh)
+    else: mechspecies, mole_ratio = get_cb7vcp_cf2_roc(smiles,log10cstar,koh)
     if np.count_nonzero(mechspecies) > 1:
         for i in range(len(mechspecies)):
             mech4import = pd.Series(data={'mechanism':mech,'SPECIES_ID':row['SPECIES_ID'],
                                           'mech_species':mechspecies[i],'moles_ratio':mole_ratio[i]})
-            dfmech4import = dfmech4import.append(mech4import,ignore_index=True)
+            dfmech4import = pd.concat([dfmech4import,pd.DataFrame([mech4import])],ignore_index=True)
     else:
         mech4import = pd.Series(data={'mechanism':mech,'SPECIES_ID':row['SPECIES_ID'],
                                       'mech_species':mechspecies,'moles_ratio':mole_ratio})
-        dfmech4import = dfmech4import.append(mech4import,ignore_index=True)
+        dfmech4import = pd.concat([dfmech4import,pd.DataFrame([mech4import])],ignore_index=True)
 
   # write mech4import df to file
   today = date.today()
@@ -52,9 +52,9 @@ def dfappend_cb6r3_ae7(dfin):
   
   return 
 
-def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
+def get_cb7vcp_cf2_roc(smiles,log10cstar,koh):
   '''
-  Function maps input reactive organic carbon (ROC) species to CB6R3_AE7 species.
+  Function maps input reactive organic carbon (ROC) species to CB7VCP_CF2 species.
   Uses functional group and molecule info from RDKit http://www.rdkit.org/
   Function inputs, for ONE compound (make loop outside this function):
       smiles string (should be canonical for explicit species, some alt added) 
@@ -87,6 +87,8 @@ def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
   # Count functional groups (http://rdkit.org/docs/source/rdkit.Chem.Fragments.html)
   nacid     = rdkit.Chem.Fragments.fr_COO(m,countUnique=True)     # carboxylic acid
   nketone   = rdkit.Chem.Fragments.fr_ketone(m,countUnique=True)
+  nester    = rdkit.Chem.Fragments.fr_ester(m,countUnique=True)
+  nether    = rdkit.Chem.Fragments.fr_ether(m,countUnique=True)
   naldehyde = rdkit.Chem.Fragments.fr_aldehyde(m,countUnique=True)
   ncarbonyl = nketone + naldehyde
   nbenzene  = rdkit.Chem.Fragments.fr_benzene(m,countUnique=True)
@@ -109,27 +111,38 @@ def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
   elif ( smiles == '[C]' ):         mechspecies, mole_ratio = 'UNR', 1   # Unreactive
 
   # Explicit species
-  elif ( smiles == 'CC(O)=O' ):     mechspecies, mole_ratio = 'AACD', 1  # Acetic Acid
+  elif ( smiles == 'CC(=O)O' or smiles == 'CC(O)=O' ):
+                                    mechspecies, mole_ratio = 'AACD', 1  # Acetic Acid
   elif ( smiles == 'CC(=O)C' or smiles == 'CC(C)=O' ): 
                                     mechspecies, mole_ratio = 'ACET', 1  # Acetone
   elif ( smiles == 'CC=O' ):        mechspecies, mole_ratio = 'ALD2', 1  # Acetaldehyde
   elif ( nC==6 and nH==6 and nO==0 and nbenzene==1 ):   
                                     mechspecies, mole_ratio = 'BENZ', 1  # Benzene   
   elif ( smiles == "C"  ):          mechspecies, mole_ratio = 'CH4',  1  # Methane
+  elif ( smiles == 'CCOCC' ):       mechspecies, mole_ratio = 'DEE',  1  # Diethyl Ether
+  elif ( smiles == "COC" ):         mechspecies, mole_ratio = 'DME', 1   # Dimethyl Ether  
+  elif ( smiles == 'C(CO)O' or smiles == 'OCCO' ):
+                                    mechspecies, mole_ratio = 'EDOH', 1  # Ethylene Glycol
+  elif ( smiles == 'CCOC(=O)C' or smiles == 'CCOC(C)=O' ):
+                                    mechspecies, mole_ratio = 'ETAC', 1  # Ethyl acetate
+  elif ( smiles == 'CCOC=O' ):      mechspecies, mole_ratio = 'ETFM', 1  # Ethyl formate 
   elif ( smiles == 'C=C' ):         mechspecies, mole_ratio = 'ETH',  1  # Ethene
   elif ( smiles == "CC" ):          mechspecies, mole_ratio = 'ETHA', 1  # Ethane  
   elif ( smiles == 'C#C' ):         mechspecies, mole_ratio = 'ETHY', 1  # Ethyne
   elif ( smiles == 'CCO' ):         mechspecies, mole_ratio = 'ETOH', 1  # Ethanol
-  elif ( smiles == 'C(=O)O' or smiles == 'OC=O' ):       
+  elif ( smiles == 'C(=O)O' or smiles == 'O=CO' or smiles == 'OC=O'):
                                     mechspecies, mole_ratio = 'FACD', 1  # Formic Acid
   elif ( smiles == 'C=O' ):         mechspecies, mole_ratio = 'FORM', 1  # Formaldehyde  
-  elif ( smiles == 'O=CC=O' ):      mechspecies, mole_ratio = 'GLY',  1  # Glyoxal
-  elif ( smiles == 'OCC=O' ):       mechspecies, mole_ratio = 'GLYD', 1  # Glycolaldehyde
+  elif ( smiles == 'CC(C)C' ):      mechspecies, mole_ratio = 'IBTA', 1  # i-butane
+  elif ( smiles == 'CC(C)O' ):      mechspecies, mole_ratio = 'IPOH', 1  # i-propanol
   elif ( smiles == 'CC(=C)C=C' ):   mechspecies, mole_ratio = 'ISOP', 1  # Isoprene
+  elif ( smiles == 'CC(=O)OC' or smiles == 'COC(C)=O' ):
+                                    mechspecies, mole_ratio = 'MEAC', 1  # Methyl acetate 
+  elif ( smiles == 'COC=O' ):       mechspecies, mole_ratio = 'MEFM', 1  # Methyl formate 
   elif ( smiles == 'CO' ):          mechspecies, mole_ratio = 'MEOH', 1  # Methanol 
-  elif ( smiles == 'CC(=O)C=O' ):   mechspecies, mole_ratio = 'MGLY', 1  # Methylglyoxal
-  elif ( nC==10 and nH==8 and nO==0 and nbenzene==2 ):   
-                                    mechspecies, mole_ratio = 'NAPH', 1  # Naphthalene   
+  elif ( smiles == 'CCCO' ):        mechspecies, mole_ratio = 'NPOH', 1  # n-propanol 
+  elif ( smiles == 'CC(CO)O' or smiles == 'CC(O)CO' ):
+                                    mechspecies, mole_ratio = 'PDOH', 1  # Propylene glycol 
   elif ( smiles == 'CCC' ):         mechspecies, mole_ratio = 'PRPA', 1  # Propane 
   elif ( tfmonoterpene and nCdblC==1 ): 
                                     mechspecies, mole_ratio = 'APIN', 1  # a-pinene
@@ -138,13 +151,12 @@ def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
   # Volatility defined
   elif ( log10cstar < 2.5 ):        mechspecies, mole_ratio = 'NVOL', 1   # Nonvolatile
   elif ( log10cstar < 6.5 ):        mechspecies, mole_ratio = 'IVOC', 1   # IVOCs
+  # Any silanes/siloxanes
+  elif nSi > 0:                     mechspecies, mole_ratio = 'SXD5', 1
   # Low reactivity --> Unreactive
   elif ( koh<=1.1e-12 ):            mechspecies, mole_ratio = 'UNR', 1
   # Monoterpenes
-  elif ( tfmonoterpene ): mechspecies, mole_ratio = 'TERP', 1
-  # Isoprene products; methacrolein, methyl vinyl ketone
-  elif ( nC==4 and nH==6 and nO==1 and nketone==1 ): 
-                                    mechspecies, mole_ratio = 'ISPD', 1
+  elif ( tfmonoterpene ):           mechspecies, mole_ratio = 'TERP', 1
   # Cyclodienes
   elif ( gotring==1 and nCdblC==2 and nbenzene==0):
       mechspecies, mole_ratio = 'IOLE', 1
@@ -284,7 +296,7 @@ def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
                    mechspecies = mechspecies,'PAR',
                    mole_ratio  = mole_ratio,carbon_count
        elif ( nC>=8 and nBranch>1 ): # Xylene and other polyalkyl aromatics
-           mechspecies, mole_ratio = 'XYLMN', 1
+           mechspecies, mole_ratio = 'XYL', 1
            carbon_count = nC - 8
            if carbon_count > 0:
                if len(mechspecies)==2:
@@ -450,10 +462,89 @@ def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
           else:
               mechspecies = mechspecies,'PAR',
               mole_ratio  = mole_ratio,carbon_count
- # Other
+  # Higher alcohols
+  elif ( nC>=4 and nalcohol>=1 ): # Larger alcohols (C4+)
+      mechspecies, mole_ratio = 'ROH', 1
+  # Larger esters (C4+, excluding ethyl acetate)
+  elif ( nC>=4 and nester>=1 ): # Larger esters (C4+)
+      mechspecies, mole_ratio = 'ESTR', 1
+  # Larger ethers (C4+, excluding diethyl ether)
+  elif ( nC>=4 and nether>=1 ): # Larger ethers (C4+)
+      mechspecies, mole_ratio = 'ETHR', 1
+  # Other
   else:
       carbon_count = nC
       if carbon_count > 0:
+          if ( nCdblC==0 and nketone==0 and ntermalke==0 and nC>=12):
+              try: mechspecies
+              except NameError:
+                  mechspecies = 'HPAR'
+                  mole_ratio  = 1
+              else:
+                  if len(mechspecies)==2:
+                      mechspecies = mechspecies[0],mechspecies[1],'HPAR',
+                      mole_ratio  = mole_ratio[0],mole_ratio[1],1
+                  else:
+                      mechspecies = mechspecies,'HPAR',
+                      mole_ratio  = mole_ratio,1
+              carbon_count = carbon_count - carbon_count
+          if ( nCdblC==0 and nketone==0 and ntermalke==0 and nC==11):
+              try: mechspecies
+              except NameError:
+                  mechspecies = 'HPAR'
+                  mole_ratio  = 0.75
+                  mechspecies = mechspecies,'PAR',
+                  mole_ratio  = mole_ratio,2
+              else:
+                  if len(mechspecies)==2:
+                      mechspecies = mechspecies[0],mechspecies[1],'HPAR',
+                      mole_ratio  = mole_ratio[0],mole_ratio[1],0.75
+                      mechspecies = mechspecies,'PAR',
+                      mole_ratio  = mole_ratio,2
+                  else:
+                      mechspecies = mechspecies,'HPAR',
+                      mole_ratio  = mole_ratio,0.75
+                      mechspecies = mechspecies,'PAR',
+                      mole_ratio  = mole_ratio,2
+              carbon_count = carbon_count - carbon_count
+          if ( nCdblC==0 and nketone==0 and ntermalke==0 and nC==10):
+              try: mechspecies
+              except NameError:
+                  mechspecies = 'HPAR'
+                  mole_ratio  = 0.5
+                  mechspecies = mechspecies,'PAR',
+                  mole_ratio  = mole_ratio,4
+              else:
+                  if len(mechspecies)==2:
+                      mechspecies = mechspecies[0],mechspecies[1],'HPAR',
+                      mole_ratio  = mole_ratio[0],mole_ratio[1],0.5
+                      mechspecies = mechspecies,'PAR',
+                      mole_ratio  = mole_ratio,4
+                  else:
+                      mechspecies = mechspecies,'HPAR',
+                      mole_ratio  = mole_ratio,0.5
+                      mechspecies = mechspecies,'PAR',
+                      mole_ratio  = mole_ratio,4
+              carbon_count = carbon_count - carbon_count
+          if ( nCdblC==0 and nketone==0 and ntermalke==0 and nC==9):
+              try: mechspecies
+              except NameError:
+                  mechspecies = 'HPAR'
+                  mole_ratio  = 0.25
+                  mechspecies = mechspecies,'PAR',
+                  mole_ratio  = mole_ratio,6
+              else:
+                  if len(mechspecies)==2:
+                      mechspecies = mechspecies[0],mechspecies[1],'HPAR',
+                      mole_ratio  = mole_ratio[0],mole_ratio[1],0.25
+                      mechspecies = mechspecies,'PAR',
+                      mole_ratio  = mole_ratio,6
+                  else:
+                      mechspecies = mechspecies,'HPAR',
+                      mole_ratio  = mole_ratio,0.25
+                      mechspecies = mechspecies,'PAR',
+                      mole_ratio  = mole_ratio,6
+              carbon_count = carbon_count - carbon_count
           if ( nCdblC>0 and ntermalke>0 ):
               nCdblC = nCdblC - ntermalke
               try: mechspecies
@@ -632,7 +723,7 @@ def get_cb6r3_ae7_roc(smiles,log10cstar,koh):
 df = pd.read_excel('./export_species_properties.xlsx')
 ############################################################################################
 
-dfappend_cb6r3_ae7(df)
+dfappend_cb7vcp_cf2(df)
 ############################################################################################
 
 print("Time to generate mechanism for import file: ",datetime.now() - startTime)
