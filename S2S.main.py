@@ -35,7 +35,7 @@ FCRS_FILE  = './input/camx_fcrs.profile.csv'
 ### MW file name & path:
 MW_FILE    = './input/mechanism_mw.csv'
 ### mechanism_forImport file name & path:
-M4I_FILE   = './input/mechanism_forImport_SPECIATEv5_3.csv'
+M4I_FILE   = './input/mechanism_forImport_SPECIATEv5_4.csv'
 ### pm_mech file name & path:
 PMM_FILE   = './input/mech_pm_ae5_ae6_cr1_cr2.csv'
 ### tbl_tox file name & path:
