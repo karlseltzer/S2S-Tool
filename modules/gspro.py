@@ -99,7 +99,7 @@ def gen_gspro_voc(profiles,species,species_props,molwght,mech4import,tbl_tox,MEC
             NONBAF = pd.Series(data={'MODEL.SPECIES':'NONBAF'})
             molesplit = molesplit.loc[~molesplit['MODEL.SPECIES'].isin(NONBAF)] # remove NONBAF from profile
         else: pass
-
+    
         dfgspro   = pd.concat([dfgspro,molesplit]) # append profile gspro to final gspro
 
     dfgspro['MASS.FRACTION']  = dfgspro['MASS.FRACTION'].astype(float).apply(lambda x: '%.6E' % x)
@@ -265,11 +265,18 @@ def gen_gspro_pm(profiles,species,species_props,mechPM,tbl_tox,poa_volatility,po
 
         elif MECH_BASIS == 'PM-CR1':
             if profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE6' or profiles.loc[i,'PROFILE_TYPE'] == 'PM':
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N2ALK'][0] # add AROCN2ALK
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'N1ALK'][0] # add AROCN1ALK
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P0ALK'][0] # add AROCP0ALK
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P1ALK'][0] # add AROCP1ALK
-                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * temp_poa.loc[:,'P2ALK'][0] # add AROCP2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (temp_poa.loc[:,'N2ALK'][0] + \
+                                                                                    temp_poa.loc[:,'N2OXY8'][0] + temp_poa.loc[:,'N2OXY4'][0] + \
+                                                                                    temp_poa.loc[:,'N2OXY2'][0]) # add AROCN2ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3395., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (temp_poa.loc[:,'N1ALK'][0] + \
+                                                                                    temp_poa.loc[:,'N1OXY6'][0] + temp_poa.loc[:,'N1OXY3'][0] + \
+                                                                                    temp_poa.loc[:,'N1OXY1'][0]) # add AROCN1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3396., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (temp_poa.loc[:,'P0ALK'][0] + \
+                                                                                    temp_poa.loc[:,'P0OXY4'][0] + temp_poa.loc[:,'P0OXY2'][0]) # add AROCP0ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3397., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (temp_poa.loc[:,'P1ALK'][0] + \
+                                                                                    temp_poa.loc[:,'P1OXY3'][0] + temp_poa.loc[:,'P1OXY1'][0]) # add AROCP1ALK
+                temp_mech.loc[temp_mech['SPECIES_ID'] == 3398., 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (temp_poa.loc[:,'P2ALK'][0] + \
+                                                                                    temp_poa.loc[:,'P2OXY2'][0]) # add AROCP2ALK
 
             elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE8':
                 temp_mech.loc[temp_mech['SPECIES_ID'] == 3394., 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['log10Cstar'] == -2, 'WEIGHT_PERCENT'].sum() # add AROCN2ALK
@@ -358,11 +365,32 @@ def gen_gspro_pm(profiles,species,species_props,mechPM,tbl_tox,poa_volatility,po
                                                                                     temp_poa.loc[:,'P2OXY2'][0] / (temp_poa.loc[:,'P2ALK'][0] + temp_poa.loc[:,'P2OXY2'][0]) # add AROCP2OXY2
 
             elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR1':
-                pass # SV-POA already appropriately mapped in base profile. Use PM-CR1 profile.
+                pass # SV-POA already appropriately mapped in base profile. Use PM-CR1 profile. Could add oxygenated split in future.
                 
             elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR2':
                 pass # SV-POA already appropriately mapped in base profile.            
                 
+        elif MECH_BASIS == 'PM-GC':
+            if profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE6' or profiles.loc[i,'PROFILE_TYPE'] == 'PM':
+                temp_mech.loc[temp_mech['Species'] == 'OC', 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['OM/OC/NCOM'] == 'OC', 'WEIGHT_PERCENT'].sum() # add OC
+                temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['OM/OC/NCOM'] == 'NCOM', 'WEIGHT_PERCENT'].sum() # add PNCOM
+            
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-AE8':
+                temp_mech.loc[temp_mech['Species'] == 'OC', 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['OM/OC/NCOM'] == 'OC', 'WEIGHT_PERCENT'].sum() # add OC
+                temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'] = poa_mech.loc[poa_mech['OM/OC/NCOM'] == 'NCOM', 'WEIGHT_PERCENT'].sum() # add PNCOM
+            
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR1':
+                temp_mech.loc[temp_mech['Species'] == 'OC', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * 1 / \
+                                                                                 profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO'] # add OC
+                temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (1 - 1 / \
+                                                                                   profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO']) # add PNCOM
+            elif profiles.loc[i,'PROFILE_TYPE'] == 'PM-CR2':
+                temp_mech.loc[temp_mech['Species'] == 'OC', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * 1 / \
+                                                                                 profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO'] # add OC
+                temp_mech.loc[temp_mech['Species'] == 'PNCOM', 'WEIGHT_PERCENT'] = poa_mech.loc[:,'WEIGHT_PERCENT'].sum() * (1 - 1 / \
+                                                                                   profiles.loc[i,'ORGANIC_MATTER_to_ORGANIC_CARBON_RATIO']) # add PNCOM
+            else: sys.exit('PROFILE_TYPE = '+profiles.loc[i,'PROFILE_TYPE']+' for profile '+prof+' is not recognized.')
+
         else: sys.exit('MECH_BASIS is not recognized.')
         
         ### Chlorine: If 337 is absent, but 795 is present, use 795

@@ -11,16 +11,16 @@ def check_basis_output(MECH_BASIS,OUTPUT):
         if MECH_BASIS=='CB6R3_AE7' or MECH_BASIS=='CB6R5_AE7' or MECH_BASIS=='CB7_AE7' or \
            MECH_BASIS=='CB6R4_CF2' or MECH_BASIS=='CB7_CF2' or MECH_BASIS=='CB6R3_AE7_TRACER' or \
            MECH_BASIS=='CRACMMv1.0' or MECH_BASIS=='CRACMMv2.0' or MECH_BASIS=='SAPRC07TC_AE7' or \
-           MECH_BASIS=='SAPRC07_CF2': pass
+           MECH_BASIS=='GEOSChem14.6.3' or MECH_BASIS=='SAPRC07_CF2': pass
         else:
             print('MECH_BASIS for OUTPUT==VOC is not allowed.')
-            sys.exit('Only CB6R3_AE7, CB6R5_AE7, CB7_AE7, CB6R4_CF2, CB7_CF2, CB6R3_AE7_TRACER, CRACMMv1.0, CRACMMv2.0, SAPRC07TC_AE7, SAPRC07_CF2 are accepted.')
+            sys.exit('Only CB6R3_AE7, CB6R5_AE7, CB7_AE7, CRACMMv1.0, CRACMMv2.0, GEOSChem14.6.3, SAPRC07TC_AE7, CB6R3_AE7_TRACER, CB6R4_CF2, CB7_CF2, CB7VCP_CF2, SAPRC07_CF2 are accepted.')
     elif OUTPUT=='PM':
-        if MECH_BASIS=='PM-AE6' or MECH_BASIS=='PM-CR1' or MECH_BASIS=='PM-CR2':
+        if MECH_BASIS=='PM-AE6' or MECH_BASIS=='PM-CR1' or MECH_BASIS=='PM-CR2' or MECH_BASIS=='PM-GC':
             pass
         else:
             print('MECH_BASIS for OUTPUT==PM is not allowed.')
-            sys.exit('Only PM-AE6, PM-CR1, and PM-CR2 are accepted.')
+            sys.exit('Only PM-AE6, PM-CR1, PM-CR2, and PM-GC are accepted.')
     else: sys.exit('OUTPUT entered is not recognized. Only VOC and PM are allowed.')
 ####################################################################################################
 

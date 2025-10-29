@@ -1,10 +1,10 @@
 #S2S_AQM             CMAQ
 #S2S_CAMX_FCRS       Not Applicable
 #S2S_MW              ./input/mechanism_mw.csv
-#S2S_MECH_BASIS      CRACMMv2.0
-#S2S_RUN_TYPE        CRITERIA
-#S2S_RUN_DATE        2025-01-02
-#S2S_TBL_TOX         Not Applicable
+#S2S_MECH_BASIS      GEOSChem14.6.3
+#S2S_RUN_TYPE        NOINTEGRATE
+#S2S_RUN_DATE        2025-10-27
+#S2S_TBL_TOX         ./input/tbl_tox_NBAFM.csv
 #BY PROFILE
 VOC                  TOG                  0000                 1.17481203          
 VOC                  TOG                  0001                 1.63934426          
@@ -2682,10 +2682,3 @@ VOC                  TOG                  WIL02                1.49358103
 VOC                  TOG                  WIL03                2.24109300          
 VOC                  TOG                  WIL04                2.42177741          
 VOC                  TOG                  WRBCO_R              8.89498299          
-EVP__VOC             EVP__TOG             2444                 1.07886503          
-EVP__VOC             EVP__TOG             8753                 1.00000000          
-EVP__VOC             EVP__TOG             8754                 1.00000000          
-EVP__VOC             EVP__TOG             DIESEVP              1.00355106          
-EXH__VOC             EXH__TOG             8774                 1.01882869          
-EXH__VOC             EXH__TOG             8750a                1.19501469          
-EXH__VOC             EXH__TOG             8751a                1.19869285          

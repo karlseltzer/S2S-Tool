@@ -1,6 +1,7 @@
 import sys
 from datetime import date,datetime
 import pandas as pd
+import warnings
 
 startTime = datetime.now()
 today     = date.today()
@@ -18,8 +19,8 @@ today     = date.today()
 
 ####################################################################################################
 ### User Input
-### Photochemical mechanism; options include CB6R3_AE7, CB6R5_AE7, CB7_AE7, CRACMMv1.0, CRACMMv2.0, SAPRC07TC_AE7, CB6R3_AE7_TRACER, CB6R4_CF2, CB7_CF2, CB7VCP_CF2, SAPRC07_CF2, PM-AE6, PM-CR1, PM-CR2
-MECH_BASIS = 'CRACMMv2.0'
+### Photochemical mechanism; options include CB6R3_AE7, CB6R5_AE7, CB7_AE7, CRACMMv1.0, CRACMMv2.0, GEOSChem14.6.3, SAPRC07TC_AE7, CB6R3_AE7_TRACER, CB6R4_CF2, CB7_CF2, CB7VCP_CF2, SAPRC07_CF2, PM-AE6, PM-CR1, PM-CR2, PM-GC
+MECH_BASIS = 'GEOSChem14.6.3'
 ### Output type; options include VOC, PM
 OUTPUT     = 'VOC'
 ### Select run type; options include CRITERIA, INTEGRATE, NOINTEGRATE
@@ -37,7 +38,7 @@ MW_FILE    = './input/mechanism_mw.csv'
 ### mechanism_forImport file name & path:
 M4I_FILE   = './input/mechanism_forImport_SPECIATEv5_4.csv'
 ### pm_mech file name & path:
-PMM_FILE   = './input/mech_pm_ae5_ae6_cr1_cr2.csv'
+PMM_FILE   = './input/mech_pm_ae5_ae6_cr1_cr2_gc.csv'
 ### tbl_tox file name & path:
 TOX_FILE   = './input/tbl_tox_NBAFM.csv' # 'tbl_tox_NBAFM.csv' ; 'tbl_tox_TOM.csv' ; 'tbl_tox_RESID_PM.csv' ; 'tbl_tox_MOVES_HAPS.csv'
 ####################################################################################################
@@ -120,6 +121,8 @@ print('NOTICE: Mechanism basis is '+MECH_BASIS)
 print('NOTICE: Profile Tolerance is ',TOLERANCE)
 ####################################################################################################
 
+# Suppress specific FutureWarning messages
+warnings.simplefilter(action='ignore', category=FutureWarning)
 ### QA check: ensure MECH_BASIS and OUTPUT make sense
 check_inputs.check_basis_output(MECH_BASIS,OUTPUT)
 ### QA check: ensure mech4import, mechPM, etc are not empty following filters above

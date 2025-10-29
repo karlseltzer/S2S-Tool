@@ -1,0 +1,31 @@
+#S2S_AQM             CMAQ
+#S2S_CAMX_FCRS       ./input/camx_fcrs.profile.csv
+#S2S_MW              ./input/mechanism_mw.csv
+#S2S_MECH_BASIS      CB6R3_AE7_TRACER
+#S2S_RUN_TYPE        CRITERIA
+#S2S_RUN_DATE        2025-10-23
+#S2S_TBL_TOX         Not Applicable
+96001                TOG                  ALD2_PRIMARY 2.258076E-02  4.400000E+01  2.258076E-02 
+96001                TOG                  FORM_PRIMARY 5.921725E-02  3.000000E+01  5.921725E-02 
+96001                TOG                  SOAALK     1.858369E-02  2.405000E+02  1.858369E-02 
+96002                TOG                  ALD2_PRIMARY 2.285207E-02  4.400000E+01  2.285207E-02 
+96002                TOG                  FORM_PRIMARY 4.735870E-02  3.000000E+01  4.735870E-02 
+96002                TOG                  SOAALK     1.351299E-02  2.405000E+02  1.351299E-02 
+96003                TOG                  ALD2_PRIMARY 2.229261E-02  4.400000E+01  2.229261E-02 
+96003                TOG                  FORM_PRIMARY 4.452546E-02  3.000000E+01  4.452546E-02 
+96003                TOG                  SOAALK     1.385395E-02  2.405000E+02  1.385395E-02 
+96004                TOG                  ALD2_PRIMARY 2.242957E-02  4.400000E+01  2.242957E-02 
+96004                TOG                  FORM_PRIMARY 3.361445E-02  3.000000E+01  3.361445E-02 
+96004                TOG                  SOAALK     1.450361E-02  2.405000E+02  1.450361E-02 
+96005                TOG                  ALD2_PRIMARY 1.980797E-02  4.400000E+01  1.980797E-02 
+96005                TOG                  FORM_PRIMARY 4.679324E-02  3.000000E+01  4.679324E-02 
+96005                TOG                  SOAALK     1.684803E-02  2.405000E+02  1.684803E-02 
+96006                TOG                  ALD2_PRIMARY 3.988573E-02  4.400000E+01  3.988573E-02 
+96006                TOG                  FORM_PRIMARY 6.487433E-02  3.000000E+01  6.487433E-02 
+96006                TOG                  SOAALK     6.013574E-03  2.405000E+02  6.013574E-03 
+96007                TOG                  ALD2_PRIMARY 2.612148E-02  4.400000E+01  2.612148E-02 
+96007                TOG                  FORM_PRIMARY 3.588747E-02  3.000000E+01  3.588747E-02 
+96007                TOG                  SOAALK     2.027541E-03  2.405000E+02  2.027541E-03 
+96008                TOG                  ALD2_PRIMARY 1.448588E-02  4.400000E+01  1.448588E-02 
+96008                TOG                  FORM_PRIMARY 1.008646E-02  3.000000E+01  1.008646E-02 
+96008                TOG                  SOAALK     2.902847E-02  2.405000E+02  2.902847E-02 
