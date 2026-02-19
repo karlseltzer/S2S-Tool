@@ -34,8 +34,8 @@ TOX_IN     = 'NONHAPTOG' # NONHAPTOG ; TOM ; RESID_PM
 ### tbl_tox file name & path:
 TOX_FILE   = './input/tbl_tox_MOVES_HAPS.csv'  # tbl_tox_NBAFM.csv; tbl_tox_TOM.csv; tbl_tox_RESID_PM.csv; tbl_tox_MOVES_HAPS.csv
 ### mechanism_forImport file name & path:
-M4I_FILE   = './input/mechanism_forImport_SPECIATEv5_3.csv'
-### pm_mech file name & path:
+M4I_FILE   = './input/mechanism_forImport_SPECIATEv5_4.csv'
+### mech_pm file name & path:
 PMM_FILE   = './input/mech_pm_ae5_ae6_cr1_cr2_gc.csv'
 ####################################################################################################
 

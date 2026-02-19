@@ -237,7 +237,9 @@ def build_pm_ready_profile(p: pd.Series, temp_spec: pd.DataFrame, oxygen_metals:
         set_w(2669, get_w(626) * 0.25)
     elif 'biomass burning' in l2_lower:
         set_w(2669, get_w(626) * 0.7)
-
+    else:
+        set_w(2669, get_w(626) * 0.4)
+        
     # Keep only positive weights
     temp_pm = temp_pm.loc[temp_pm['WEIGHT_PERCENT'] > 0.0].copy()
 
