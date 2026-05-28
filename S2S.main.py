@@ -24,7 +24,7 @@ today     = date.today()
 ### CB7VCP_CF2, SAPRC07_CF2, PM-AE6, PM-CR1, PM-CR2, PM-GC
 MECH_BASIS = 'CB6R3_AE7'
 ### Select run type; options include CRITERIA, INTEGRATE, NOINTEGRATE
-RUN_TYPE   = 'INTEGRATE'
+RUN_TYPE   = 'CRITERIA'
 ### Select air quality model; options include CMAQ, CAMX
 AQM        = 'CMAQ'
 ### Assign acceptable deviation from 100% allowable. Applies only to gas profiles.
@@ -164,7 +164,7 @@ else:
 
 ### Generate GSPRO file:
 if OUTPUT=='VOC':
-    if RUN_TYPE=='CRITERIA' or RUN_TYPE=='INTEGRATE' or RUN_TYPE=='NOINTEGRATE':
+    if RUN_TYPE in {'CRITERIA', 'INTEGRATE', 'NOINTEGRATE'}:
         print('NOTICE: Beginning generation of GSPRO file.')
         ### Create gspro file for the target MECH_BASIS
         gspro.gen_gspro_voc(profiles,species,molwght,mech4import,tbl_tox,MECH_BASIS,RUN_TYPE,TOLERANCE,TOX_IN,PRO_OUT)
