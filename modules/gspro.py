@@ -51,7 +51,7 @@ def gen_gspro_voc(profiles: pd.DataFrame, species: pd.DataFrame, molwght: pd.Dat
          print(f'Profile "{pc}" is empty following pollutant integration and therefore not processed.')
 
     sp = sp.loc[sp['PROFILE_CODE'].isin(keep_profiles)].copy()
-
+    
     # NMOG fraction per profile (exclude SPECIES_ID == 529; aka methane)
     nmog_perc = sp.loc[sp['SPECIES_ID'] != 529].groupby('PROFILE_CODE')['WEIGHT_PERCENT'].sum()
     nmog_perc = nmog_perc.reindex(prof_codes, fill_value=0.0)
@@ -63,23 +63,23 @@ def gen_gspro_voc(profiles: pd.DataFrame, species: pd.DataFrame, molwght: pd.Dat
     mech_map = mech4import.merge(molwght[['Species', 'SPEC_MW']], on='Species', how='left'
                                  ).rename(columns={'SPEC_MW': 'MW_model'})
 
-    # Sum over mapping rows per compound SPECIES_ID
+    # Calculate the effective MW for each SPECIES_ID
     eff_mw_by_specid = (mech_map['Moles'] * mech_map['MW_model']).groupby(mech_map['SPECIES_ID']).sum()
 
-    # Inner-join is safe and avoids NaNs
+    # Append Species, Moles, and MW_model to sp dataframe; create sp_mech
     sp_mech = sp.merge(mech_map[['SPECIES_ID', 'Species', 'Moles', 'MW_model']],
                        on='SPECIES_ID',how='inner')
-    
-    # Attach effective MW per compound SPECIES_ID
+
+    # Append effective MW per compound SPECIES_ID
     sp_mech['eff_MW'] = sp_mech['SPECIES_ID'].map(eff_mw_by_specid)
 
-    # Calculate mole model species / mass VOC
+    # Calculate MolBSF: mole model species / mass output pollutant (e.g., VOC)
     sp_mech['moleSpec_massVOC'] = sp_mech['WEIGHT_PERCENT'] * sp_mech['Moles'] / sp_mech['eff_MW']
 
     grouped = sp_mech.groupby(['PROFILE_CODE', 'Species'], as_index=False).agg(
         moleSpec_massVOC=('moleSpec_massVOC', 'sum'), MW_model=('MW_model', 'first'))
     
-    # Final mass fractions for model species
+    # Calculate MassBSF: mass fractions for model species
     grouped['MASS.FRACTION'] = grouped['moleSpec_massVOC'] * grouped['MW_model']
     
     dfgspro = grouped.rename(columns={'PROFILE_CODE': 'PROFILE', 'Species': 'MODEL.SPECIES',
@@ -90,7 +90,7 @@ def gen_gspro_voc(profiles: pd.DataFrame, species: pd.DataFrame, molwght: pd.Dat
     dfgspro.insert(1, 'INPUT.POLL', i_poll)
     dfgspro['MASS.FRACTION1'] = dfgspro['MASS.FRACTION']
 
-    # Add NMOG
+    # Add NMOG for non-CB6R3_AE7_TRACER setups
     if MECH_BASIS != 'CB6R3_AE7_TRACER':
         add = (nmog_perc.rename('MASS.FRACTION').rename_axis('PROFILE').reset_index())
         add['INPUT.POLL'] = i_poll
@@ -117,23 +117,6 @@ def gen_gspro_voc(profiles: pd.DataFrame, species: pd.DataFrame, molwght: pd.Dat
 def build_pm_ready_profile(p: pd.Series, temp_spec: pd.DataFrame, oxygen_metals: pd.DataFrame) -> pd.DataFrame:
     """
     Translate a base SPECIATE PM profile (ptype == 'PM') into a 'PM-ready' profile.
-
-    Parameters
-    ----------
-    p : pd.Series
-        Row from the profiles DataFrame for the current profile. Must include
-        PROFILE_CODE, CATEGORY_LEVEL_1_Generation_Mechanism, CATEGORY_LEVEL_2_Sector_Equipment.
-    temp_spec : pd.DataFrame
-        Species rows for the current PROFILE_CODE with columns ['PROFILE_CODE','SPECIES_ID','WEIGHT_PERCENT'].
-        WEIGHT_PERCENT is expected to be percent values (sum near 100).
-    oxygen_metals : pd.DataFrame
-        DataFrame with metal oxygen ratios. Must include columns ['SPECIES_ID', 'oxy/metal_ratio'].
-
-    Returns
-    -------
-    pd.DataFrame
-        A PM-ready species DataFrame with columns ['PROFILE_CODE','SPECIES_ID','WEIGHT_PERCENT'].
-        WEIGHT_PERCENT is in percent (not fraction), potentially renormalized.
     """
     prof = p['PROFILE_CODE']  # Pull profile code
     l1   = p['CATEGORY_LEVEL_1_Generation_Mechanism']  # Pull L1 category
@@ -149,7 +132,7 @@ def build_pm_ready_profile(p: pd.Series, temp_spec: pd.DataFrame, oxygen_metals:
     temp_pm = temp_pm.merge(temp_spec[['SPECIES_ID', 'WEIGHT_PERCENT']], on='SPECIES_ID', how='left')
     temp_pm['WEIGHT_PERCENT'] = temp_pm['WEIGHT_PERCENT'].fillna(0.0)
 
-    # Helpers
+    # Helper functions
     def get_w(spec_id: int) -> float:
         return float(temp_pm.loc[temp_pm['SPECIES_ID'] == spec_id, 'WEIGHT_PERCENT'].iloc[0])
 
@@ -298,7 +281,7 @@ def gen_gspro_pm(profiles,species,mechPM,tbl_tox,poa_volatility,poa_mapping,camx
                                  on='SPECIES_ID', how='left')
         temp_mech['WEIGHT_PERCENT'] = temp_mech['WEIGHT_PERCENT'].fillna(0.0)
 
-        # Append WEIGHT_PERCENT, replace all NaN with zeros, 
+        # Append WEIGHT_PERCENT for all POA species, replace all NaN with zeros, 
         # remove species where WEIGHT_PERCENT == 0.0, and calculate total POA weight percent
         poa_mech = poa_mapping.merge(temp_spec[['SPECIES_ID', 'WEIGHT_PERCENT']].drop_duplicates(),
                                      on='SPECIES_ID', how='left').fillna({'WEIGHT_PERCENT': 0.0})
@@ -368,14 +351,12 @@ def gen_gspro_pm(profiles,species,mechPM,tbl_tox,poa_volatility,poa_mapping,camx
                 set_weight(temp_mech, 3396., poa_total * float(temp_poa['P0ALK'].iat[0]),  by='SPECIES_ID') # add AROCP0ALK
                 set_weight(temp_mech, 3397., poa_total * float(temp_poa['P1ALK'].iat[0]),  by='SPECIES_ID') # add AROCP1ALK
                 set_weight(temp_mech, 3398., poa_total * float(temp_poa['P2ALK'].iat[0]),  by='SPECIES_ID') # add AROCP2ALK
-
                 set_weight(temp_mech, 3524., poa_total * float(temp_poa['N2OXY8'].iat[0]), by='SPECIES_ID') # add AROCN2OXY8
                 set_weight(temp_mech, 3523., poa_total * float(temp_poa['N2OXY4'].iat[0]), by='SPECIES_ID') # add AROCN2OXY4
                 set_weight(temp_mech, 3522., poa_total * float(temp_poa['N2OXY2'].iat[0]), by='SPECIES_ID') # add AROCN2OXY2
                 set_weight(temp_mech, 3527., poa_total * float(temp_poa['N1OXY6'].iat[0]), by='SPECIES_ID') # add AROCN1OXY6
                 set_weight(temp_mech, 3526., poa_total * float(temp_poa['N1OXY3'].iat[0]), by='SPECIES_ID') # add AROCN1OXY3
                 set_weight(temp_mech, 3525., poa_total * float(temp_poa['N1OXY1'].iat[0]), by='SPECIES_ID') # add AROCN1OXY1
-
                 set_weight(temp_mech, 3529., poa_total * float(temp_poa['P0OXY4'].iat[0]), by='SPECIES_ID') # add AROCP0OXY4
                 set_weight(temp_mech, 3528., poa_total * float(temp_poa['P0OXY2'].iat[0]), by='SPECIES_ID') # add AROCP0OXY2
                 set_weight(temp_mech, 3531., poa_total * float(temp_poa['P1OXY3'].iat[0]), by='SPECIES_ID') # add AROCP1OXY3
@@ -408,6 +389,7 @@ def gen_gspro_pm(profiles,species,mechPM,tbl_tox,poa_volatility,poa_mapping,camx
                          ['P2ALK', 'P2OXY2'])
 
             elif ptype == 'PM-CR1':
+                # An option in the future could be to perform direct allocation by volatility bins, similar to PM-AE6
                 pass  # already mapped in base profile
                 
             elif ptype == 'PM-CR2':
@@ -538,7 +520,7 @@ def format_and_header(tbl_tox,TOX_IN,MECH_BASIS,RUN_TYPE,AQM,MW_FILE,FCRS_FILE,T
     if RUN_TYPE == 'INTEGRATE':
         if 'Inv.Species' not in tbl_tox.columns:
             raise ValueError("tbl_tox must contain the column 'Inv.Species' to build NHAP header lines.")
-        # Append each tox species as its own line (keeps the original order)
+        # Append each tox species as its own line
         # Format: " #NHAP  {TOX_IN:<12} {Inv.Species}"
         for _, row in tbl_tox.iterrows():
             species_name = str(row['Inv.Species']).strip()

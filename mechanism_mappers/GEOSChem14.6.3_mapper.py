@@ -1,6 +1,5 @@
 """
-@author: Karl Seltzer
-contributors: Karl Seltzer, Havala Pye: USEPA
+@author: Karl Seltzer: USEPA
 """
 
 import rdkit
